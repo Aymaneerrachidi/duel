@@ -17,6 +17,7 @@
     "test:solana": "cd contracts/solana && anchor test",
     "providers:check": "tsx scripts/check-providers.ts",
     "readiness:check": "tsx scripts/check-readiness.ts",
+    "scheduler:prepare": "tsx scripts/prepare-scheduler.ts",
     "gmgn:keygen": "tsx scripts/gmgn-keygen.ts",
     "deploy": "vercel --prod",
     "worker:check": "wrangler deploy --dry-run",

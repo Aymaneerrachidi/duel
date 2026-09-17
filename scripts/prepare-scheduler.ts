@@ -1,0 +1,10 @@
+import 'dotenv/config';
+import { mkdir,readFile,writeFile } from 'node:fs/promises';
+const secret=process.env.CRON_SECRET;
+if(!secret||secret.length<32)throw new Error('Set CRON_SECRET to the same random server token configured in Vercel.');
+const origin=process.env.PRODUCTION_APP_ORIGIN??'https://duel-rose.vercel.app';
+if(new URL(origin).protocol!=='https:'||new URL(origin).origin!==origin)throw new Error('PRODUCTION_APP_ORIGIN must be an HTTPS origin without a path.');
+const sql=(await readFile('supabase/scheduler.sql','utf8')).replace('__CRON_SECRET__',secret.replaceAll("'","''")).replace('__APP_ORIGIN__',origin.replaceAll("'","''"));
+await mkdir('.data',{recursive:true});
+await writeFile('.data/enable-supabase-scheduler.sql',sql,{mode:0o600});
+console.log('Prepared .data/enable-supabase-scheduler.sql. Run this private file in your Supabase SQL Editor. It contains the scheduler token; keep it out of Git.');

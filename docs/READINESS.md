@@ -1,4 +1,4 @@
-# Beta readiness — 17 September 2026
+# Beta readiness — 18 September 2026
 
 This is a live-wallet **paper-duel beta**. Wallet linking, six-chain accounting, supported transaction replay, predictions, sharing and the demo lifecycle are implemented. Stakes remain simulated; the app never broadcasts trades or custody transactions.
 
@@ -11,11 +11,15 @@ This is a live-wallet **paper-duel beta**. Wallet linking, six-chain accounting,
 - Arc Mainnet (5042) enabled in application configuration; public primary and independent RPC backup configured. Native USDC and its ERC-20 interface are counted once.
 - Vercel adapter, security headers, SPA routes, dynamic social metadata and authenticated scheduled refresh implemented.
 
-## Remaining external blocker
+## Remaining external setup
 
 The saved Alchemy key still receives **“ARC_MAINNET is not enabled for this app”**. Enable **Arc Mainnet** for the same app/key, rather than Arc Testnet or a different app. Check [Alchemy Networks](https://dashboard.alchemy.com/apps/t2fo38w7pkh4tlq4/networks), then run `pnpm readiness:check`.
 
 Public Arc RPC reads known balances but cannot replace the token-discovery index. A six-chain challenge cannot accept an incomplete Arc component. More unrelated API keys will not resolve this entitlement.
+
+**Scheduled refresh is not active yet.** GitHub blocked both Actions jobs before starting: “your account is locked due to a billing issue.” The authenticated Vercel scheduler endpoint was tested successfully, but GitHub cannot invoke it on schedule while the account is locked. Cloudflare is not signed in locally.
+
+A Supabase alternative is prepared in the private local file `.data/enable-supabase-scheduler.sql`. Run its contents in this project's Supabase SQL Editor once. It stores the existing scheduler token in Vault and checks for due work every minute. No new API key is required. The filled file contains a secret and is excluded from Git. The public template is [scheduler.sql](../supabase/scheduler.sql); regenerate the private copy with `pnpm scheduler:prepare`. This SQL has not been executed against the hosted database by this build.
 
 ## Supported settlement scope
 

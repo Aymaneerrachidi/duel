@@ -2,6 +2,10 @@
 
 ## Vercel + Supabase
 
+Production: **https://duel-rose.vercel.app**. GitHub is linked for deployments. Keep `NODEJS_HELPERS=0` so Vercel does not consume request bodies before Hono; the adapter also disables body parsing explicitly.
+
+The GitHub account currently has an Actions billing lock. To activate the prepared independent scheduler, run `pnpm scheduler:prepare` and paste `.data/enable-supabase-scheduler.sql` into Supabase SQL Editor as postgres. The private SQL inserts/updates its token in Vault and registers only the `pnl-duels-refresh` job. It checks each minute while the app retains five-minute wallet refresh limits. See [Supabase scheduling and Vault](https://supabase.com/docs/guides/functions/schedule-functions). Confirm `/admin` shows advancing refresh times before starting live duels. If needed, enable Cron under Supabase Integrations first.
+
 The root `vercel.json` builds React and a Node 22 Hono function. Static assets come from `dist`; `/api`, `/og` and social challenge pages use the function. Secrets are server variables, never `VITE_*` variables.
 
 1. Apply `supabase/setup.sql` once. The current database already has this schema.

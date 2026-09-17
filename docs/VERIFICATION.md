@@ -17,6 +17,10 @@ Verified locally on Windows, 18 September 2026, using Node 22 and the committed 
 | Helius/Alchemy/Jupiter/DexPaprika/GMGN credentials | Supplied and tested; Alchemy Arc still lacks network permission |
 | Supabase hosted account / public deployment | Schema installed; public Vercel health/bootstrap/auth protection and authenticated scheduler checked |
 | Anchor compile and Solana escrow execution | Not verified: toolchain download exceeded available disk space |
+| GitHub hosted checks/scheduler | Jobs did not start: account locked due to billing issue |
+| Supabase Cron alternative | SQL prepared locally; not yet run in the hosted SQL Editor |
+
+Production smoke checks at https://duel-rose.vercel.app passed: live bootstrap with six chains, wallet nonce with the correct production domain, rejection of a foreign Origin, authenticated cron success, rejection of missing cron credentials, and protected admin/portfolio routes. A real Chromium session passed desktop/mobile navigation, the EVM wallet dialog, layout checks and zero runtime/server errors. Owner wallet signatures and a complete real-market duel were not exercised.
 
 Playwright runs against its own memory-only demo server on ports 5174/8788. It does not use the real `.env`, database or persistent demo file. Its screenshots are written to `.data/qa-home-desktop.png`, `.data/qa-duel-desktop.png` and `.data/qa-home-mobile.png`; traces and HTML reports are local ignored artifacts. Layout checks cover 375, 390, 430 and 768-pixel widths plus desktop.
 
