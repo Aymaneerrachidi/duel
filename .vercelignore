@@ -1,0 +1,11 @@
+.env*
+.data
+.git
+.github
+contracts
+test-results
+playwright-report
+coverage
+.wrangler
+node_modules
+docs

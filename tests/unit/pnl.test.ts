@@ -1,0 +1,43 @@
+import { describe,it,expect } from 'vitest';
+import { calculateDuelResult,hashResult,selectPool,timeWeightedReturn,transition,valuePosition } from '../../packages/core/src/pnl';
+import { RULES } from '../../packages/core/src/config';
+import { seedDemo } from '../../packages/core/src/demo';
+import type { CashFlow, Price, Position } from '../../packages/core/src/types';
+const flow=(before:string,after:string,amount:string,time=1):Pick<CashFlow,'timestamp'|'beforeValueUsd'|'afterValueUsd'|'amountUsd'|'classification'>=>({timestamp:time,beforeValueUsd:before,afterValueUsd:after,amountUsd:amount,classification:Number(amount)>=0?'INFLOW':'OUTFLOW'});
+const now=1700000000000;const price:Price={chain:'solana',address:'mint',symbol:'TOKEN',usd:'1',liquidity:'1000000',volume24h:'100000',source:'fixture',pool:'pool',timestamp:now,observedAt:now,confidence:'HIGH',divergence:0,poolCreatedAt:now-86400000};
+const position:Omit<Position,'valueUsd'|'excludedUsd'>={address:'mint',symbol:'TOKEN',rawBalance:'1000000000',decimals:6,balance:'1000',price};
+describe('cash-flow adjusted return',()=>{
+  it('measures 20% return',()=>expect(timeWeightedReturn('1000','1200')).toBeCloseTo(20));
+  it('neutralizes a $10,000 deposit',()=>expect(timeWeightedReturn('1000','11000',[flow('1000','11000','10000')])).toBe(0));
+  it('neutralizes a $500 withdrawal before subsequent trading',()=>expect(timeWeightedReturn('1000','600',[flow('1000','500','-500')])).toBeCloseTo(20));
+  it('compounds multiple deposits and withdrawals',()=>expect(timeWeightedReturn('1000','792',[flow('1100','2100','1000'),flow('2310','660','-1650',2)])).toBeCloseTo(45.2));
+  it('handles a total asset loss',()=>expect(timeWeightedReturn('1000','0')).toBe(-100));
+  it('gas lowers performance',()=>expect(timeWeightedReturn('1000','900')).toBe(-10));
+  it('airdrops are external inflows',()=>expect(timeWeightedReturn('1000','1300',[flow('1000','1300','300')])).toBe(0));
+  it('does not invent a return from zero initial equity',()=>expect(()=>timeWeightedReturn('0','1')).toThrow());
+  it('rejects pending classification',()=>expect(()=>timeWeightedReturn('1000','11000',[{...flow('1000','11000','10000'),classification:'CLASSIFICATION_PENDING'}])).toThrow());
+  it('rejects inconsistent cashflow evidence',()=>expect(()=>timeWeightedReturn('1000','11000',[flow('1000','11000','9000')])).toThrow());
+  it('rejects withdrawal to zero followed by an unvalued period',()=>expect(()=>timeWeightedReturn('1000','0',[flow('1000','0','-1000')])).toThrow());
+  it.each(['-1','NaN','Infinity'])('rejects invalid equity %s',v=>expect(()=>timeWeightedReturn(v,'1000')).toThrow());
+  it('does not mutate flow order',()=>{const input=[flow('100','110','10',2),flow('100','110','10',1)];timeWeightedReturn('100','110',input);expect(input[0].timestamp).toBe(2);});
+});
+describe('liquidity-aware valuation',()=>{
+  it('keeps well-supported liquid positions',()=>expect(valuePosition(position,now).valueUsd).toBe('1000'));
+  it('does not price missing tokens as profit',()=>expect(valuePosition({...position,price:null},now).reason).toContain('Missing price'));
+  it('rejects manipulated tiny pools',()=>expect(valuePosition({...position,price:{...price,usd:'1000',liquidity:'5000'}},now).valueUsd).toBe('0'));
+  it('applies middle haircut',()=>expect(valuePosition({...position,balance:'50000'},now).valueUsd).toBe('45000'));
+  it('applies large haircut',()=>expect(valuePosition({...position,balance:'200000'},now).valueUsd).toBe('100000'));
+  it('excludes overwhelming pool exposure',()=>expect(valuePosition({...position,balance:'300000'},now).valueUsd).toBe('0'));
+  it('rejects future prices',()=>expect(valuePosition({...position,price:{...price,timestamp:now+1}},now).valueUsd).toBe('0'));
+  it('rejects stale prices',()=>expect(valuePosition(position,now+121000).reason).toContain('window'));
+  it('excludes dust',()=>expect(valuePosition({...position,balance:'0.01'},now).reason).toContain('Dust'));
+  it('rejects pools younger than the rule threshold',()=>expect(valuePosition({...position,price:{...price,poolCreatedAt:now-1000}},now).reason).toContain('new'));
+  it('ranks liquid pools and detects disagreement',()=>{const p=selectPool([price,{...price,liquidity:'2000000',usd:'2'}]);expect(p?.liquidity).toBe('2000000');expect(p?.confidence).toBe('LOW');});
+});
+describe('finalization',()=>{
+  it('generates deterministic hashes independent of object key order',async()=>expect(await hashResult({b:2,a:1})).toBe(await hashResult({a:1,b:2})));
+  it('refuses illegal state transitions',async()=>{const s=await seedDemo();expect(()=>transition(s.duels[0],'ACTIVE')).toThrow();});
+  it('detects missed ending snapshot and cannot announce a winner',async()=>{const s=await seedDemo();const d=s.duels[0];d.endsAt!+=RULES.endToleranceSeconds*1000+1;await expect(calculateDuelResult(d,s.snapshots,[])).rejects.toThrow('boundary');});
+  it('stops settlement on incomplete transaction coverage',async()=>{const s=await seedDemo();s.snapshots[1].transactionCoverage=false;await expect(calculateDuelResult(s.duels[0],s.snapshots,[])).rejects.toThrow('coverage');});
+  it('respects the exact tie threshold',async()=>{const s=await seedDemo();const d=s.duels[0];const snapshots=s.snapshots.filter(v=>v.duelId===d.id);for(const p of [d.challenger,d.opponent]){const list=snapshots.filter(v=>v.wallet===p).sort((a,b)=>a.timestamp-b.timestamp);list[0].totalUsd='1000';list.at(-1)!.totalUsd=p===d.challenger?'1100':'1100.5';}const result=await calculateDuelResult(d,snapshots,[]);expect(result.winner).toBeNull();});
+});

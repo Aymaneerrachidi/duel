@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
+  - bufferutil
+  - utf-8-validate
+  - keccak
+  - secp256k1

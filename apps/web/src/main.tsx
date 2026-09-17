@@ -1,0 +1,18 @@
+import React, { Suspense, lazy } from 'react';
+import ReactDOM from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import '@fontsource/geist-sans/400.css';
+import '@fontsource/geist-sans/500.css';
+import '@fontsource/geist-sans/600.css';
+import '@fontsource/geist-sans/700.css';
+import '@fontsource/geist-mono/400.css';
+import '@fontsource/geist-mono/500.css';
+import './styles.css';
+import { AppLayout } from './app';
+import { Empty, Skeleton } from './components/ui';
+const Home=lazy(()=>import('./pages/home'));const Explore=lazy(()=>import('./pages/explore'));const Leaderboard=lazy(()=>import('./pages/leaderboard'));const Duel=lazy(()=>import('./pages/duel'));const Challenge=lazy(()=>import('./pages/challenge'));const Profile=lazy(()=>import('./pages/profile'));const Admin=lazy(()=>import('./pages/admin'));const Info=lazy(()=>import('./pages/info'));
+const screen=(Component:React.ComponentType)=><Suspense fallback={<Skeleton/>}><Component/></Suspense>;
+const router=createBrowserRouter([{element:<AppLayout/>,errorElement:<div className="page"><Empty title="Something interrupted the arena." description="Reload the page to reconnect. Your saved challenges remain in the database." action={<a href="/" className="button primary">Return to arena</a>}/></div>,children:[{path:'/',element:screen(Home)},{path:'/explore',element:screen(Explore)},{path:'/live',element:screen(Explore)},{path:'/leaderboard',element:screen(Leaderboard)},{path:'/d/:slug',element:screen(Duel)},{path:'/challenge/:slug',element:screen(Duel)},{path:'/challenge',element:screen(Challenge)},{path:'/trader/:id',element:screen(Profile)},{path:'/u/:id',element:screen(Profile)},{path:'/admin',element:screen(Admin)},...['rules','setup','privacy','terms'].map(path=>({path:`/${path}`,element:screen(Info)})),{path:'*',element:<div className="page"><Empty title="This duel isn’t on the card." description="The link may have changed. Find your next rivalry in the arena." action={<a href="/" className="button primary">Back to the arena</a>}/></div>}]}]);
+const queryClient=new QueryClient({defaultOptions:{queries:{staleTime:15000,refetchOnWindowFocus:false,retry:1}}});
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={queryClient}><a href="#main" className="skip-link">Skip to content</a><RouterProvider router={router}/></QueryClientProvider></React.StrictMode>);

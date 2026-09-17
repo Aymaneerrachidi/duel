@@ -1,0 +1,30 @@
+name = "pnl-duels"
+main = "apps/worker/src/worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+fallthrough = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[vars]
+DEMO_MODE = "true"
+REAL_MONEY_ENABLED = "false"
+REAL_MONEY_SPECTATOR_MARKETS = "false"
+ALLOW_PAID_PROVIDER_USAGE = "false"
+ESCROW_MODE = "simulated"
+MAX_ACTIVE_DUELS = "10"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[observability]
+enabled = true

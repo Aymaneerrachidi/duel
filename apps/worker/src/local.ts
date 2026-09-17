@@ -1,0 +1,20 @@
+import 'dotenv/config';
+import { serve } from '@hono/node-server';
+import { resolve } from 'node:path';
+import { seedDemo } from '../../../packages/core/src/demo.js';
+import { emptyState } from '../../../packages/core/src/types.js';
+import { isDemo } from '../../../packages/core/src/config.js';
+import { FileRepository } from './local-repository.js';
+import { SupabaseRepository } from './repository.js';
+import { createApp } from './app.js';
+import { readFile } from 'node:fs/promises';
+import { initializePng } from './png.js';
+const env=process.env;
+const repo=env.SUPABASE_URL&&env.SUPABASE_SERVICE_ROLE_KEY?new SupabaseRepository(env):await FileRepository.open(resolve(`.data/${isDemo(env)?'demo':'live'}.json`),isDemo(env)?()=>seedDemo():async()=>emptyState());
+if((await repo.read()).profiles.some(p=>p.demo!==isDemo(env)))throw new Error('Use separate databases for demo and live data.');
+if(isDemo(env)&&!(await repo.read()).profiles.length){const seed=await seedDemo();await repo.transact(s=>Object.assign(s,seed));}
+const renderPng=await initializePng(await readFile(resolve('node_modules/@resvg/resvg-wasm/index_bg.wasm')),await readFile(resolve('apps/worker/assets/IBMPlexSans.ttf')));
+const {app,service}=createApp(env,repo,renderPng);const server=serve({fetch:app.fetch,port:Number(env.PORT??8787),hostname:'127.0.0.1'});
+console.info(`PNL Duels API: http://127.0.0.1:${env.PORT??8787} (${isDemo(env)?'demo':'live'})`);
+const timer=setInterval(()=>{void service.tick().catch(()=>console.error('Scheduler tick failed'));},15000);
+process.on('SIGINT',()=>{clearInterval(timer);server.close();process.exit(0);});

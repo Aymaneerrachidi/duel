@@ -1,0 +1,23 @@
+import { describe,it,expect } from 'vitest';
+import bs58 from 'bs58';
+import { sha256,toBytes } from 'viem';
+import { replaySolana } from '../../apps/worker/src/solana-replay';
+import type { Position } from '../../packages/core/src/types';
+const wallet='owner',token='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',system='11111111111111111111111111111111',jupiter='JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4';
+const position=(address:string,raw:string,decimals=0):Position=>({address,rawBalance:raw,balance:String(Number(raw)/10**decimals),decimals,symbol:address,price:null,valueUsd:'0',excludedUsd:'0'});
+const balance=(index:number,mint:string,raw:string,owner=wallet)=>({accountIndex:index,mint,owner,uiTokenAmount:{amount:raw,decimals:0}});
+const initial=()=>new Map([['native',position('native','1000000000',9)],['USDC',position('USDC','100')]]);
+const transfer=()=>({blockTime:1700000000,slot:100,transaction:{message:{accountKeys:[{pubkey:wallet,signer:true},'source','destination','extra'],instructions:[{programId:system,parsed:{type:'transfer',info:{source:wallet,destination:'other',lamports:100000000}}}]}},meta:{err:null as unknown,fee:5000,preBalances:[1000000000,0,0,0],postBalances:[899995000,0,0,0],preTokenBalances:[balance(1,'USDC','60'),balance(3,'USDC','40')],postTokenBalances:[balance(1,'USDC','60'),balance(3,'USDC','40')]}});
+const swap=()=>{const tx=transfer();return {...tx,transaction:{message:{...tx.transaction.message,instructions:[{programId:jupiter,accounts:[token,wallet,'source','destination'],data:bs58.encode(new Uint8Array([...toBytes(sha256(toBytes('global:route'))).slice(0,8),...new Uint8Array(40)]))}]}},meta:{...tx.meta,postBalances:[999995000,0,0,0],preTokenBalances:[balance(1,'USDC','100'),balance(2,'BONK','0')],postTokenBalances:[balance(1,'USDC','50'),balance(2,'BONK','900')]}};};
+describe('Solana transaction replay',()=>{
+  it('keeps native SOL separate from wrapped SOL',()=>{const running=initial();running.set('So11111111111111111111111111111111111111112',position('So11111111111111111111111111111111111111112','2000000000',9));const result=replaySolana(transfer(),wallet,running);expect(result.after.get('native')?.balance).toBe('0.899995');expect(result.after.get('So11111111111111111111111111111111111111112')?.balance).toBe('2');});
+  it('aggregates deltas across several accounts of the same mint',()=>{const tx=transfer();tx.meta.postTokenBalances=[balance(1,'USDC','70'),balance(3,'USDC','40')];expect(replaySolana(tx,wallet,initial()).after.get('USDC')?.rawBalance).toBe('110');});
+  it('replays an emptied account without discarding the other account balance',()=>{const tx=transfer();tx.meta.postTokenBalances=[balance(1,'USDC','60')];expect(replaySolana(tx,wallet,initial()).after.get('USDC')?.rawBalance).toBe('60');});
+  it('recognizes a supported Jupiter trade as performance, with no external flow',()=>{const result=replaySolana(swap(),wallet,initial());expect(result.classification).toBe('SWAP');expect(result.after.get('BONK')?.rawBalance).toBe('900');expect(result.fee.toString()).toBe('0.000005');});
+  it('rejects Jupiter output routed to someone else',()=>{const tx=swap();tx.meta.postTokenBalances[1].owner='attacker';expect(()=>replaySolana(tx,wallet,initial())).toThrow('owned by this wallet');});
+  it('rejects an external transfer attached to a Jupiter trade',()=>{const tx=swap();tx.meta.postBalances[0]-=100000000;expect(()=>replaySolana(tx,wallet,initial())).toThrow('unexplained native transfer');});
+  it('rejects an unknown discriminator despite the known program ID',()=>{const tx=swap();tx.transaction.message.instructions[0].data=bs58.encode(new Uint8Array(48));expect(()=>replaySolana(tx,wallet,initial())).toThrow('Unsupported Jupiter route');});
+  it('requires the route authority signature',()=>{const tx=swap();tx.transaction.message.accountKeys[0]={pubkey:wallet,signer:false};expect(()=>replaySolana(tx,wallet,initial())).toThrow('did not sign');});
+  it('counts failed transactions only as fees and verifies that no assets moved',()=>{const tx=transfer();tx.meta.err={InstructionError:[0,'failed']};tx.meta.postBalances[0]=999995000;expect(replaySolana(tx,wallet,initial()).classification).toBe('FEE');tx.meta.postBalances[0]=900000000;expect(()=>replaySolana(tx,wallet,initial())).toThrow('unexpected balance changes');});
+  it('rejects an unexplained balance replay gap',()=>{const tx=transfer();tx.meta.preBalances[0]=1100000000;expect(()=>replaySolana(tx,wallet,initial())).toThrow('replay gap');});
+});
