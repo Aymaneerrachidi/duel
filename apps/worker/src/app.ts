@@ -3,7 +3,7 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { bodyLimit } from 'hono/body-limit';
 import { secureHeaders } from 'hono/secure-headers';
 import { z } from 'zod';
-import { verifyMessage } from 'viem';
+import { getAddress, verifyMessage } from 'viem';
 import { ed25519 } from '@noble/curves/ed25519';
 import bs58 from 'bs58';
 import { CHAIN_IDS, CHAINS, PRODUCT, RULES, enforceSafety, isDemo, enabledChains, type Env } from '../../../packages/core/src/config.js';
@@ -50,7 +50,9 @@ export function createApp(env:Env,repo:Repository,renderPng?:(svg:string)=>Promi
     if(isDemo(env))throw new AppError('Use the demo persona selector in demo mode.');const input=z.object({chain:z.enum(CHAIN_IDS),wallet:z.string().max(100),purpose:z.enum(['login','link']).default('login'),evmChainId:z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional()}).parse(await c.req.json());const wallet=normalizeWallet(input.chain,input.wallet);const nonce=crypto.randomUUID().replaceAll('-','');const now=Date.now(),expiresAt=now+300000;const domain=new URL(origin).host;
     const profile=input.purpose==='link'?requireProfile(c.get('profile')):undefined;
     const statement=profile?`Link this wallet to your ${PRODUCT.name} trader account ${profile.id}. All supported chains contribute to one portfolio.`:`Sign in to ${PRODUCT.name}.`;
-    const message=`${domain} wants you to sign in with your ${input.chain==='solana'?'Solana':'Ethereum'} account:\n${wallet}\n\n${statement} This signature does not authorize a transaction.\n\nURI: ${origin}\nVersion: 1\nChain ID: ${input.chain==='solana'?'solana:mainnet':input.evmChainId??CHAINS[input.chain].id}\nNonce: ${nonce}\nIssued At: ${new Date(now).toISOString()}\nExpiration Time: ${new Date(expiresAt).toISOString()}`;
+    // SIWE displays the EIP-55 address; database identity remains case-normalized.
+    const signingAddress=input.chain==='solana'?wallet:getAddress(wallet);
+    const message=`${domain} wants you to sign in with your ${input.chain==='solana'?'Solana':'Ethereum'} account:\n${signingAddress}\n\n${statement} This signature does not authorize a transaction.\n\nURI: ${origin}\nVersion: 1\nChain ID: ${input.chain==='solana'?'solana:mainnet':input.evmChainId??CHAINS[input.chain].id}\nNonce: ${nonce}\nIssued At: ${new Date(now).toISOString()}\nExpiration Time: ${new Date(expiresAt).toISOString()}`;
     await repo.transact(s=>{s.nonces=s.nonces.filter(n=>!(n.wallet===wallet&&walletFamily(n.chain)===walletFamily(input.chain)&&n.purpose===input.purpose&&n.profileId===profile?.id));s.nonces.push({id:nonce,wallet,chain:input.chain,message,expiresAt,purpose:input.purpose,...(profile?{profileId:profile.id,sessionId:c.get('sessionId')}: {})});});return c.json({nonce,message,expiresAt});
   });
   app.post('/api/auth/verify',async c=>{

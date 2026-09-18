@@ -28,6 +28,7 @@ All data tables have RLS and deny anon/authenticated table access. The Worker us
 ## Authentication and authorization
 
 - Solana Ed25519 and EVM message signatures verify the wallet against a server-stored domain/chain-bound nonce.
+- The wallet picker selects Phantom independently for Solana and EVM through its dedicated provider namespaces, with Wallet Standard and EIP-6963 discovery for other extensions. EVM sign-in messages display the EIP-55 checksum while stored identities remain lowercase. The client checks that the challenge, signing account and current provider account agree before signing and after the prompt; a changed account/network requires a fresh challenge. See [Phantom provider detection](https://docs.phantom.com/ethereum-monad-testnet-base-and-polygon/detecting-the-provider) and [SIWE](https://eips.ethereum.org/EIPS/eip-4361).
 - A profile links one Solana and one EVM address. Link challenges explicitly identify the target account and are bound to the same active session. A transaction enforces one account per wallet and rotates the session after a successful link. No network switch is needed for EVM portfolio tracking.
 - Challenges expire in five minutes and are consumed atomically once. Wallet sessions last four hours in live mode.
 - Cookies are HttpOnly, SameSite=Lax and Secure on HTTPS. Stored session IDs are hashes of random tokens and the application session secret.

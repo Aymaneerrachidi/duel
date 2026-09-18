@@ -24,6 +24,13 @@ async function signSol(n:{nonce:string;message:string}){return {nonce:n.nonce,si
 beforeEach(()=>{repo=new MemoryRepository();app=createApp({DEMO_MODE:'false',SESSION_SECRET:'wallet-link-unit-test-secret-at-least-32',APP_ORIGIN:origin,ADMIN_WALLETS:solAddress},repo).app;});
 
 describe('one trader with signed Solana and EVM wallets',()=>{
+  it.each([evm.address,evm.address.toLowerCase()])('uses a checksummed SIWE signing address for %s',async wallet=>{
+    const r=await request('/auth/nonce',{chain:'ethereum',evmChainId:8453,wallet});expect(r.status).toBe(200);
+    const n=await r.json();expect(n.message.split('\n')[1]).toBe(evm.address);expect(n.message).toContain('Chain ID: 8453');
+    expect((await repo.read()).nonces[0].wallet).toBe(evm.address.toLowerCase());
+    const verified=await request('/auth/verify',{nonce:n.nonce,signature:await evm.signMessage({message:n.message})});
+    expect(verified.status).toBe(200);expect((await verified.json()).profile.wallet).toBe(evm.address.toLowerCase());
+  });
   it('uses one identity and one points grant across all EVM networks',async()=>{
     const a=await login(evm,'base'),b=await login(evm,'arc');expect(b.profile.id).toBe(a.profile.id);
     const s=await repo.read();expect(s.profiles).toHaveLength(1);expect(s.ledger).toHaveLength(1);expect(s.profiles[0].wallets).toHaveLength(1);

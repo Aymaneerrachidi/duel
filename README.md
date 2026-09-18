@@ -30,7 +30,7 @@ The local demo persists in `.data/demo.json`. Live data uses a different file, `
 - Arena, searchable duels, rankings, trader profiles, following, notifications, challenge wizard, direct challenge links, countdowns, portfolio charts and calculation details.
 - Challenge creation with idempotency, correct-wallet acceptance, start snapshots, scheduled updates, expiry, final calculation and immutable result hashes.
 - Signed linking of one Solana and one EVM wallet under one trader identity, with all six supported chains combined in new live duels. Wallet sets freeze at acceptance.
-- Single-use wallet-signature authentication for Solana and injected EVM wallets; HttpOnly sessions, origin checks, validation and authorization.
+- Single-use wallet-signature authentication for Phantom on Solana and EVM, other Wallet Standard Solana wallets, and discovered EVM extensions; HttpOnly sessions, origin checks, validation and authorization.
 - Spectator points with atomic debits, fixed cutoff, participant exclusions and idempotent proportional payouts/refunds.
 - SVG and PNG result images, browser download, social sharing, public-only social metadata on Vercel and Cloudflare.
 - Provider quotas, caching, request coalescing, pacing, independent RPC failover, circuit breakers, Retry-After handling and administrative visibility.
