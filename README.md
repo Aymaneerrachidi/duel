@@ -12,6 +12,8 @@ A runnable portfolio-duel beta with a complete local demo, signed wallet session
 
 Actual application capture from the automated browser check. All displayed traders, stakes and returns in this screenshot are demo fixtures.
 
+The interface pairs cobalt blue and coral with light backgrounds, original player illustrations, and Bricolage Grotesque headings. See the [design notes](docs/DESIGN.md) for the palette and component locations.
+
 ## Run
 
 Requires Node 22 and pnpm 10.

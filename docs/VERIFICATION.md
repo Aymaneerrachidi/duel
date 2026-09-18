@@ -26,6 +26,8 @@ Playwright runs against its own memory-only demo server on ports 5174/8788, with
 
 Phantom regression tests simulate the extension transport, sign with disposable test keys, and send the signatures through the real nonce/verification API. Both desktop and mobile tests sign in with Solana, link Phantom EVM while another EVM extension is installed, reload, and sign back into the same profile with EVM. Tests verify checksummed SIWE addresses, the selected provider, account/network changes, Wallet Standard key/message consistency, session cookies and a single points grant. These are automated provider simulations; the owner's actual Phantom extension still needs a retry after deployment.
 
+The cobalt/coral redesign was reviewed with actual screenshots of the empty live homepage, populated demo arena, duel page and wallet dialog. Its responsive checks, complete demo flow, share-card download, and both Phantom linking scenarios passed. ESLint, strict TypeScript, the production build and all 117 unit/API tests passed after the redesign. Screenshots were refreshed to show the current interface.
+
 PostgreSQL checks exercise full fixture insertion, consistent state reads, optimistic conflict rejection, anonymous access denial, direct historical update/deletion rejection, append-only commits and rate limits. Test cleanup targets only the disposable test container.
 
 Ganache uses its JavaScript fallback on this Windows/Node build because its optional native micro-WebSockets binary is unavailable. Contract scenarios passed with that fallback.
