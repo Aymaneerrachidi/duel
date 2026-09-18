@@ -46,7 +46,7 @@ The **demo workflow is complete**. Adding keys enables real wallet authenticatio
 - EVM replay uses pinned balances, transfer logs, receipts, nonce coverage (including approvals and failed transactions), gas/data fees and supported native internal transfer indexes. Plain transfers and decoded Uniswap v2/PancakeSwap v2 routes are supported. Unknown protocols and bridges pause settlement.
 - Combined external flows use chronological whole-portfolio valuation. Missing historical prices, ambiguous cross-chain order and overlapping snapshot boundaries prevent settlement.
 - Recent EVM snapshots include hashes; results wait for canonical finality without moving the ending boundary. Arc native USDC is counted once and uses an observed canonical USDC market reference on Ethereum.
-- Arc public RPC works; the configured Alchemy app still rejects Arc Mainnet. Complete six-chain acceptance requires resolving its token-discovery entitlement. See [READINESS.md](docs/READINESS.md).
+- Arc mainnet RPC, token discovery and transfer indexing are verified. The Supabase scheduler is active, with successful production refresh requests observed one minute apart. See [READINESS.md](docs/READINESS.md).
 - Missing or inconsistent evidence produces `INCOMPLETE`/`DISPUTED`, never a fabricated return or winner. Adding keys cannot remove unsupported decoder limitations.
 - The Solana program has **not been compiled or execution-tested in this workspace**: its toolchain download exhausted available disk space. The EVM tests do not constitute an audit of either contract.
 - The initial store reads a whole database snapshot and serializes commits through a revision lock. This is a small beta, not a load-tested 1,000-user service. See [capacity and deployment](docs/DEPLOYMENT.md).

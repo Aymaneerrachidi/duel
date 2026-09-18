@@ -14,11 +14,11 @@ Verified locally on Windows, 18 September 2026, using Node 22 and the committed 
 | Cloudflare Worker packaging dry run | Passed; about 1.6 MiB compressed |
 | Public RPC connectivity | Solana, Robinhood 4663, Base 8453, BNB 56, Ethereum 1 passed |
 | Public price endpoints | DEX Screener native references, GeckoTerminal pools and DexPaprika metadata passed |
-| Helius/Alchemy/Jupiter/DexPaprika/GMGN credentials | Supplied and tested; Alchemy Arc still lacks network permission |
+| Helius/Alchemy/Jupiter/DexPaprika/GMGN credentials | Supplied and tested; Arc mainnet RPC, inventory and transfer index now pass |
 | Supabase hosted account / public deployment | Schema installed; public Vercel health/bootstrap/auth protection and authenticated scheduler checked |
 | Anchor compile and Solana escrow execution | Not verified: toolchain download exceeded available disk space |
 | GitHub hosted checks/scheduler | Jobs did not start: account locked due to billing issue |
-| Supabase Cron alternative | SQL prepared locally; not yet run in the hosted SQL Editor |
+| Supabase Cron alternative | Owner installed SQL; consecutive production requests returned 200 at 00:53 and 00:54 UTC on 18 September 2026 |
 
 Production smoke checks at https://duel-rose.vercel.app passed: live bootstrap with six chains, wallet nonce with the correct production domain, rejection of a foreign Origin, authenticated cron success, rejection of missing cron credentials, and protected admin/portfolio routes. A real Chromium session passed desktop/mobile navigation, the EVM wallet dialog, layout checks and zero runtime/server errors. Owner wallet signatures and a complete real-market duel were not exercised.
 

@@ -11,15 +11,18 @@ This is a live-wallet **paper-duel beta**. Wallet linking, six-chain accounting,
 - Arc Mainnet (5042) enabled in application configuration; public primary and independent RPC backup configured. Native USDC and its ERC-20 interface are counted once.
 - Vercel adapter, security headers, SPA routes, dynamic social metadata and authenticated scheduled refresh implemented.
 
-## Remaining external setup
+## Setup confirmed
 
-The saved Alchemy key still receives **“ARC_MAINNET is not enabled for this app”**. Enable **Arc Mainnet** for the same app/key, rather than Arc Testnet or a different app. Check [Alchemy Networks](https://dashboard.alchemy.com/apps/t2fo38w7pkh4tlq4/networks), then run `pnpm readiness:check`.
+Both previously outstanding setup items were verified on 18 September 2026:
 
-Public Arc RPC reads known balances but cannot replace the token-discovery index. A six-chain challenge cannot accept an incomplete Arc component. More unrelated API keys will not resolve this entitlement.
+- **Arc:** the configured Alchemy key now returns mainnet chain ID 5042, ERC-20 token inventory, a finalized block and transfer history successfully.
+- **Scheduled refresh:** after the owner installed the Supabase scheduler SQL, Vercel recorded successful `GET /api/cron` requests at **00:53:00 and 00:54:00 UTC**, one minute apart. No manual scheduler request was made during this verification. Production health also returned HTTP 200 in live mode.
 
-**Scheduled refresh is not active yet.** GitHub blocked both Actions jobs before starting: “your account is locked due to a billing issue.” The authenticated Vercel scheduler endpoint was tested successfully, but GitHub cannot invoke it on schedule while the account is locked. Cloudflare is not signed in locally.
+The Supabase job provides the recurring trigger independently of GitHub Actions. GitHub previously refused to start hosted jobs because of an account billing lock; that check did not test application code. Wallet refreshes still use the configured five-minute interval, quota budgets and shared job lease.
 
-A Supabase alternative is prepared in the private local file `.data/enable-supabase-scheduler.sql`. Run its contents in this project's Supabase SQL Editor once. It stores the existing scheduler token in Vault and checks for due work every minute. No new API key is required. The filled file contains a secret and is excluded from Git. The public template is [scheduler.sql](../supabase/scheduler.sql); regenerate the private copy with `pnpm scheduler:prepare`. This SQL has not been executed against the hosted database by this build.
+The public scheduler template is [scheduler.sql](../supabase/scheduler.sql). For another installation, `pnpm scheduler:prepare` creates a private filled copy under `.data/`; it contains a token and must remain outside Git. The current installation does not need to be repeated.
+
+This confirms provider access and recurring scheduling for the paper beta. It does not extend supported protocol coverage or enable real-money stakes.
 
 ## Supported settlement scope
 
